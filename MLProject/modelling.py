@@ -27,9 +27,10 @@ param_grid = {
 grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=3, n_jobs=-1, scoring='f1_macro')
 
 # 3. Memulai Tracking di CI Pipeline
-mlflow.set_experiment("CI_Pipeline_Churn")
+# HAPUS mlflow.set_experiment() agar tidak bentrok dengan 'mlflow run'
 
-with mlflow.start_run(run_name="CI_RandomForest_Tuning"):
+# UBAH menjadi mlflow.start_run() kosong agar ia otomatis menyambung ke Run yang sudah dibuat
+with mlflow.start_run():
     # Fit model
     grid_search.fit(X_train, y_train)
     best_model = grid_search.best_estimator_
@@ -66,7 +67,7 @@ with mlflow.start_run(run_name="CI_RandomForest_Tuning"):
         f.write(report)
     mlflow.log_artifact('classification_report.txt') 
     
-    # --- PENYIMPANAN MODEL UNTUK DOCKER (KRITERIA 3) ---
+    # --- PENYIMPANAN MODEL UNTUK DOCKER ---
     model_dir = "saved_model"
     
     if os.path.exists(model_dir):

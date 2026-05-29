@@ -60,15 +60,15 @@ jobs:
         run: |
           cd MLProject
           
-          # [Trik] Menyisipkan parameter 'nodefaults' ke dalam konfigurasi model 
-          # agar proses instalasi melewati channel yang mewajibkan ToS Anaconda.
-          sed -i 's/channels:/channels:\n  - nodefaults/g' saved_model/conda.yaml
+          # 1. Ekstrak Dockerfile bawaan MLflow ke dalam folder 'docker_build'
+          mlflow models generate-dockerfile -m saved_model -d docker_build
           
-          # Menampilkan file untuk memastikan perubahan berhasil
-          cat saved_model/conda.yaml
+          # 2. Trik Intersepsi: Memperbaiki tautan get-pip.py yang kadaluarsa untuk Python 3.9
+          sed -i 's|https://bootstrap.pypa.io/get-pip.py|https://bootstrap.pypa.io/pip/3.9/get-pip.py|g' docker_build/Dockerfile
           
-          # Lanjut melakukan Build Docker
-          mlflow models build-docker -m saved_model -n churn-model:latest --env-manager=conda
+          # 3. Jalankan build Docker dari folder tersebut menggunakan nama image yang sesuai
+          cd docker_build
+          docker build -t churn-model:latest .
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3

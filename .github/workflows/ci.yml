@@ -58,9 +58,17 @@ jobs:
 
       - name: Build Docker Model
         run: |
-            cd MLProject
-            # Menambahkan --env-manager=conda untuk menghindari error Python 3.9 get-pip
-            mlflow models build-docker -m saved_model -n churn-model:latest --env-manager=conda
+          cd MLProject
+          
+          # [Trik] Menyisipkan parameter 'nodefaults' ke dalam konfigurasi model 
+          # agar proses instalasi melewati channel yang mewajibkan ToS Anaconda.
+          sed -i 's/channels:/channels:\n  - nodefaults/g' saved_model/conda.yaml
+          
+          # Menampilkan file untuk memastikan perubahan berhasil
+          cat saved_model/conda.yaml
+          
+          # Lanjut melakukan Build Docker
+          mlflow models build-docker -m saved_model -n churn-model:latest --env-manager=conda
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3

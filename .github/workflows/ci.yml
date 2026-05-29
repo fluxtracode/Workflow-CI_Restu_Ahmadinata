@@ -13,7 +13,6 @@ jobs:
       DOCKER_IMAGE: churn-model:latest
 
     steps:
-      # Menggunakan v4 untuk menghindari error deprecation v3 yang sebelumnya terjadi
       - name: Run actions/checkout@v3
         uses: actions/checkout@v4
 
@@ -35,21 +34,18 @@ jobs:
       - name: Run mlflow project
         run: |
           cd MLProject
-          # Menggunakan local environment manager agar tidak perlu conda
           mlflow run . --env-manager=local
 
       - name: Get latest MLflow run_id
         run: |
           cd MLProject
           echo "Mencari run_id dari folder mlruns..."
-          # Mengambil nama folder run_id secara dinamis
           RUN_ID=$(ls mlruns/0 | grep -E '^[0-9a-f]{32}$' | head -n 1 || echo "not_found")
           echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV
           echo "Latest MLflow Run ID: $RUN_ID"
 
       - name: Install Python dependencies
         run: |
-          # Tahap ini untuk berjaga-jaga jika ada pustaka ekstra yang dibutuhkan untuk deployment/docker
           echo "Semua dependency Python utama sudah terinstal."
 
       - name: Upload to Github
@@ -60,6 +56,11 @@ jobs:
 
       - name: Build Docker Model
         run: |
+          # Mengakali bug MLflow
+          MLFLOW_DIR=$(python -c "import mlflow; import os; print(os.path.dirname(mlflow.__file__))")
+          find "$MLFLOW_DIR" -type f -name "*.py" -exec sed -i 's|https://bootstrap.pypa.io/get-pip.py|https://bootstrap.pypa.io/pip/3.9/get-pip.py|g' {} +
+          
+          # Eksekusi build-docker asli
           cd MLProject
           mlflow models build-docker -m saved_model -n "$DOCKER_IMAGE"
 

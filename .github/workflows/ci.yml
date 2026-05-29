@@ -1,4 +1,4 @@
-name: MLflow CI Pipeline
+name: CI/CD Pipeline Kriteria 3
 
 on:
   push:
@@ -7,46 +7,55 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  mlflow-ci-pipeline:
     runs-on: ubuntu-latest
 
     steps:
+      # Tahap 1: Mengambil kode dari repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Tahap 2: Menyiapkan environment Python/Conda
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           python-version: "3.12"
 
+      # Tahap 3: Menginstal library utama yang dibutuhkan runner
       - name: Install MLflow
         run: pip install mlflow==2.19.0
 
+      # Tahap 4: Menjalankan pelatihan model via MLflow Project
+      # (Menggunakan bash -el {0} agar tidak error saat conda activate)
       - name: Run MLflow Project
+        shell: bash -el {0}
         run: |
           cd MLProject
           mlflow run . --env-manager=conda
 
-      # [Skilled] Menyimpan artefak model ke GitHub Actions
-      - name: Upload Model Artifact
+      # Tahap 5: Menyimpan artefak model ke GitHub Actions (Syarat Kriteria Skilled)
+      # Memilih GitHub Artifacts sebagai alternatif pengganti Google Drive
+      - name: Upload to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: trained-model
+          name: model-artefak-churn
           path: MLProject/saved_model/
 
+      # Tahap 6: Autentikasi ke Docker Hub untuk persiapan Push
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # [Advanced] Build dan Push Docker Image menggunakan MLflow
+      # Tahap 7: Membuat dan mengirim Docker Image (Syarat Kriteria Advanced)
       - name: Build and Push Docker Image
         run: |
           cd MLProject
-          # Build image docker dengan tag dari username rahasia
+          
+          # Membuat image menggunakan fungsi bawaan mlflow
           mlflow models build-docker -m saved_model -n ${{ secrets.DOCKER_USERNAME }}/churn-model:latest
           
-          # Push image ke Docker Hub
+          # Mengirim image ke Docker Hub
           docker push ${{ secrets.DOCKER_USERNAME }}/churn-model:latest

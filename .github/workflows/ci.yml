@@ -1,0 +1,52 @@
+name: MLflow CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: "3.12"
+
+      - name: Install MLflow
+        run: pip install mlflow==2.19.0
+
+      - name: Run MLflow Project
+        run: |
+          cd MLProject
+          mlflow run . --env-manager=conda
+
+      # [Skilled] Menyimpan artefak model ke GitHub Actions
+      - name: Upload Model Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: trained-model
+          path: MLProject/saved_model/
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # [Advanced] Build dan Push Docker Image menggunakan MLflow
+      - name: Build and Push Docker Image
+        run: |
+          cd MLProject
+          # Build image docker dengan tag dari username rahasia
+          mlflow models build-docker -m saved_model -n ${{ secrets.DOCKER_USERNAME }}/churn-model:latest
+          
+          # Push image ke Docker Hub
+          docker push ${{ secrets.DOCKER_USERNAME }}/churn-model:latest

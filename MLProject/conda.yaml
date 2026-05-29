@@ -1,0 +1,12 @@
+name: churn-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.7
+  - pip
+  - pip:
+    - pandas
+    - scikit-learn
+    - matplotlib
+    - seaborn
+    - mlflow==2.19.0
